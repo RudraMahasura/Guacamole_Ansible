@@ -1,0 +1,11 @@
+---
+
+guacamole:
+  hosts:
+    guacamole01:
+      ansible_host: 10.0.50.246
+      ansible_user: ansible
+      ansible_ssh_pass: "#3Crawling_In_My_Skin"
+      ansible_sudo_pass: "#3Crawling_In_My_Skin"
+
+

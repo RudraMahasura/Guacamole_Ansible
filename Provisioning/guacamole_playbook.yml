@@ -1,0 +1,14 @@
+---
+- hosts: all
+  become: true
+  roles:
+  # Running common tasks
+    - common  
+  # Installing apache tomcat as a role
+    - tomcat
+  # Install guacamole as a role
+    - guacamole
+  post_tasks:
+  - include: roles/tomcat/handlers/main.yml
+  - include: roles/guacamole/handlers/main.yml
+    static: yes

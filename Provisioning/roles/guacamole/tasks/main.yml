@@ -1,0 +1,65 @@
+---
+## Install Guacamole server
+- name: Download source files from Git repository
+  git:
+    repo: 'https://github.com/apache/guacamole-server.git'
+    dest: /usr/local/src/guacamole-server
+- name: Install Guacamole Server | Checking If Guacamole Server Is Installed
+  stat:
+    path: /usr/local/sbin/guacd
+  register: _guacamole_server_installed
+- name: Install Guacamole Server | Make configure script
+  shell:
+    cmd: autoreconf -fi
+    chdir: /usr/local/src/guacamole-server
+- name: Install Guacamole Server | Configuring Guacamole Server Build
+  command: ./configure --with-init-dir=/etc/init.d
+  args:
+    chdir: /usr/local/src/guacamole-server
+  register: _guacamole_config_server_build
+  when: not _guacamole_server_installed['stat']['exists']
+- name: Install Guacamole Server | Compiling Guacamole Server
+  make:
+    chdir: /usr/local/src/guacamole-server
+  register: _guacamole_server_compiled
+  when: _guacamole_config_server_build['changed']
+- name: Install Guacamole Server | Installing Guacamole Server
+  make:
+    chdir: /usr/local/src/guacamole-server
+    target: install
+  register: _guacamole_server_installed
+  when: _guacamole_server_compiled['changed']
+- name: Install Guacamole Server | Running ldconfig
+  command: ldconfig
+  when: _guacamole_server_installed['changed']
+## Install Guacamole client
+- name: Install Guacamole Client | Download Guacamole Client  
+  get_url:
+    url: https://apache.org/dyn/closer.lua/guacamole/1.4.0/binary/guacamole-1.4.0.war?action=download
+    dest: /opt/tomcat/tomcatapp/webapps/guacamole.war
+## Configure Guacamole server
+- name: Configure Server | Create Home Directory for Guacamole 
+  file: 
+    path: /etc/guacamole
+    state: directory
+    mode: 0777 
+#- name:  GUACAMOLE_HOME environment variable 1
+#  shell:
+#    cmd: echo "GUACAMOLE_HOME=/etc/guacamole" | sudo tee -a /etc/default/tomcat
+#- name:  GUACAMOLE_HOME environment variable 2
+#  shell:
+#    cmd: echo "export GUACAMOLE_HOME=/etc/guacamole" | sudo tee -a /etc/profile
+- name: Configure Server | Create guacamole.properties file
+  template: 
+    src: guacamole.properties
+    dest: /etc/guacamole/guacamole.properties
+- name:  Configure Server | Link the Guacamole configurations directory to Tomcat servlet directory
+  shell:
+    cmd: ln -s /etc/guacamole /opt/tomcat/tomcatapp/.guacamole
+#- name:  link the Guacamole configurations directory to Tomcat servlet directory 2
+#  shell:
+#    cmd: 'chown -R tomcat: /opt/tomcat'
+- name: Configure Server | Adding User Mapping configuration
+  template: 
+    src: user-mapping.xml
+    dest: /etc/guacamole/user-mapping.xml

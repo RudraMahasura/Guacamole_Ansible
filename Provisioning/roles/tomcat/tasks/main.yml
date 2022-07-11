@@ -1,0 +1,82 @@
+---
+## Install packets needed
+- name: Install prerequisites
+  apt:
+    pkg:
+    - gcc
+    - wget
+    - g++
+    - libcairo2-dev
+    - libjpeg-turbo8-dev
+    - libpng-dev
+    - libtool-bin
+    - libossp-uuid-dev
+    - libavcodec-dev
+    - libavformat-dev
+    - libavutil-dev
+    - libswscale-dev
+    - build-essential
+    - libpango1.0-dev
+    - libssh2-1-dev
+    - libvncserver-dev
+    - libtelnet-dev
+    - libpulse-dev
+    - libssl-dev
+    - libvorbis-dev
+    - libwebp-dev
+    - libwebsockets-dev
+    - openjdk-11-jdk
+# Install FreeRDP2
+- name: Add Repository for FreeRDP2
+  ansible.builtin.apt_repository:
+    repo: ppa:remmina-ppa-team/remmina-next-daily
+- name: Apt update
+  apt: 
+    update_cache: yes 
+    cache_valid_time: 3600
+- name: Install FreeRDP2
+  apt:
+    pkg:
+    - freerdp2-dev
+    - freerdp2-x11
+## Install Apache Tomcat
+- name: Create Directory for Tomcat
+  file: 
+    path: /opt/tomcat
+    state: directory
+    mode: 0777  
+- name: Add user for Apache Tomcat
+  user:
+    name: tomcat
+    home: /opt/tomcat
+    shell: /bin/false
+- name: Extract tomcat.tar.gz to /opt/tomcat
+  unarchive:
+    src: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.64/bin/apache-tomcat-9.0.64.tar.gz
+    dest: /opt/tomcat
+    remote_src: yes
+- name: Check if Tomcat directory exists
+  stat:
+    path: /opt/tomcat/tomcatapp
+  register: tomcatapp_exists
+- name: Move extracted Tomcat distrib to its folder
+  shell: mv /opt/tomcat/apache-tomcat-9.0.64 /opt/tomcat/tomcatapp
+  when: not tomcatapp_exists.stat.exists
+- name: Chown Tomcat directory recursively
+  file: 
+    path: /opt/tomcat
+    state: directory
+    recurse: yes
+    owner: tomcat
+- name: Changing perm of "/opt/tomcat/tomcatapp/bin/", adding "+x"
+  shell: find /opt/tomcat/tomcatapp/bin/ -type f -iname "*.sh" -exec chmod +x {} \;
+- name: Create Service Unit File
+  template: 
+    src: tomcat.conf
+    dest: /etc/systemd/system/tomcat.service
+- name: Allow port 8080
+  ufw:
+    rule: allow
+    port: '8080'
+    proto: tcp
+

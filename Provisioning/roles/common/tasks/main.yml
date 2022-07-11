@@ -1,0 +1,7 @@
+---
+- name: Make sure we can connect
+  ping:
+- name: Update freshly installed system
+  apt: 
+    update_cache: yes 
+    cache_valid_time: 3600
